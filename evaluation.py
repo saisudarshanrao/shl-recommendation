@@ -1,4 +1,4 @@
-# evaluation.py
+
 import numpy as np
 from sklearn.metrics import average_precision_score
 
@@ -23,7 +23,7 @@ def map_at_k(actual, predicted, k=3):
         ap_scores.append(ap)
     return np.mean(ap_scores)
 
-# Example usage
+
 ground_truth = [
     ["SHL Verify Interactive - Java", "SHL Team Collaboration Simulation"],
     ["SHL Python Coding Test", "SHL SQL Knowledge Assessment"]
