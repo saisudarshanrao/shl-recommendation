@@ -1,4 +1,4 @@
-# shl_recommendation_system.py
+
 import os
 import re
 import time
@@ -16,7 +16,7 @@ from pydantic import BaseModel
 import streamlit as st
 import uvicorn
 
-# Configuration
+
 MODEL_NAME = "bert-base-uncased"
 SHL_URL = "https://www.shl.com/solutions/products/product-catalog/"
 EMBEDDING_DIM = 768
@@ -26,7 +26,7 @@ TEST_QUERIES = [
     "Analyst cognitive/personality tests, 45 mins"
 ]
 
-# Initialize components
+
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModel.from_pretrained(MODEL_NAME)
 zero_shot_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
@@ -45,7 +45,7 @@ def scrape_shl_catalog():
     driver = setup_chrome_driver()
     driver.get(SHL_URL)
     
-    # Scroll to load all products
+    
     last_height = driver.execute_script("return document.body.scrollHeight")
     while True:
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -59,7 +59,7 @@ def scrape_shl_catalog():
     assessments = []
     
     for item in soup.select('.product-item'):
-        # Parse duration to numerical value
+        
         duration_text = item.select_one('.duration').text.strip()
         duration = int(re.search(r'\d+', duration_text).group()) if 'min' in duration_text.lower() else 0
         
@@ -97,11 +97,11 @@ def preprocess_data():
     return pd.read_pickle('shl_embeddings.pkl')
 
 def parse_query(query):
-    # Extract duration constraint
+    
     duration_match = re.search(r'(\d+)(?:-minute|min|minutes)', query, re.IGNORECASE)
     max_duration = int(duration_match.group(1)) if duration_match else None
     
-    # Extract skills
+    
     classification = zero_shot_classifier(
         query,
         candidate_labels=["Java", "Python", "SQL", "JavaScript", 
@@ -120,7 +120,7 @@ def recommend_assessments(query, top_k=10):
     df = preprocess_data()
     parsed = parse_query(query)
     
-    # Process URL input
+    
     if query.startswith('http'):
         response = requests.get(query)
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -128,12 +128,12 @@ def recommend_assessments(query, top_k=10):
     else:
         query_text = query
     
-    # Generate query embedding
+    
     query_embedding = generate_embeddings([query_text])
     sims = cosine_similarity(query_embedding, np.stack(df['embedding'].values))[0]
     df['similarity'] = sims
     
-    # Apply filters
+    
     filtered = df
     if parsed['skills']:
         filtered = filtered[
@@ -143,7 +143,7 @@ def recommend_assessments(query, top_k=10):
     if parsed['max_duration']:
         filtered = filtered[filtered['duration'] <= parsed['max_duration']]
     
-    # Ensure minimum 1 recommendation
+    
     results = filtered.nlargest(top_k, 'similarity')[[
         'name', 'url', 'remote_support', 'adaptive_support', 
         'duration_text', 'test_type'
@@ -154,7 +154,7 @@ def recommend_assessments(query, top_k=10):
         'duration_text', 'test_type'
     ]].to_dict('records')
 
-# FastAPI setup
+
 app = FastAPI()
 
 @app.get("/health", status_code=status.HTTP_200_OK)
@@ -168,7 +168,7 @@ def recommend(request: QueryRequest):
         if not results:
             return {"recommendations": []}
         
-        # Format response exactly as required
+        
         formatted = []
         for res in results:
             formatted.append({
@@ -183,7 +183,7 @@ def recommend(request: QueryRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Streamlit app
+
 def run_streamlit():
     st.title("SHL Assessment Recommender")
     
